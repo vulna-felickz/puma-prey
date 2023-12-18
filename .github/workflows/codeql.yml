@@ -19,6 +19,13 @@ on:
   schedule:
     - cron: '33 3 * * 0'
 
+env:
+  SOLUTION: "./PumaPrey.sln"
+  CONFIGURATION: "Release"
+  
+  PROJECT: "./Coyote/Coyote.csproj"
+  TEST_SUITE: "Coyote.Tests.csproj"  
+
 jobs:
   analyze:
     name: Analyze
@@ -27,7 +34,7 @@ jobs:
     #   - https://gh.io/supported-runners-and-hardware-resources
     #   - https://gh.io/using-larger-runners
     # Consider using larger runners for possible analysis time improvements.
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'windows-2019' }}
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       actions: read
@@ -52,28 +59,29 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
+        queries: security-extended
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file.
         # Prefix the list here with "+" to use these queries and those in the config file.
 
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-        queries: security-extended
+        # queries: security-extended,security-and-quality
 
+    # - name: Autobuild
+    #   uses: github/codeql-action/autobuild@v3
 
-    # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    # - name: Windows Build
+    #   shell: powershell
+    #   run: |
+    #     $MSBuildPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -first 1  
+    #     nuget restore ${{ env.SOLUTION }}
+    #     & $MSBuildPath ${{ env.SOLUTION }} /p:Configuration=${{ env.CONFIGURATION }}
 
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-
-    #   If the Autobuild fails above, remove it and uncomment the following three lines.
-    #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
-
-    # - run: |
-    #     echo "Run, Build Application using script"
-    #     ./location_of_script_within_repo/buildscript.sh
+    - name: Dotnet Build
+      shell: bash
+      run: |
+        dotnet restore ${{ env.PROJECT }}
+        dotnet build ${{ env.PROJECT }}
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
